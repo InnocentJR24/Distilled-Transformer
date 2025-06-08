@@ -3,14 +3,18 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+from tqdm import tqdm
 
 def load_data(seq_len, pred_len, root_path, data_path, freq='h'):
     """Load and preprocess ETTh1 dataset with time features and decoder input.
     Reason: StandardScaler normalizes features; time features and x_dec support Informer.
     """
     try:
+        # Load and parse CSV
+        print(f"Loading data from {root_path}{data_path}...")
         df = pd.read_csv(f"{root_path}{data_path}")
         df['date'] = pd.to_datetime(df['date'])
+        
         # Extract time features based on freq='h'
         time_features = {
             'month': df['date'].dt.month,
@@ -20,30 +24,42 @@ def load_data(seq_len, pred_len, root_path, data_path, freq='h'):
         }
         time_df = pd.DataFrame(time_features)
         df.drop(['date'], axis=1, inplace=True)
+        
+        # Normalize data
         scaler = StandardScaler()
         data = scaler.fit_transform(df.values)
         time_data = scaler.fit_transform(time_df.values)
 
-        xs, ys, x_marks, y_marks, x_decs = [], [], [], [], []
-        for i in range(len(data) - seq_len - pred_len):
-            x = data[i:i + seq_len]  # Encoder input: [seq_len, features]
-            y = data[i + seq_len:i + seq_len + pred_len]  # Target: [pred_len, features]
-            x_mark = time_data[i:i + seq_len]  # Time features for encoder
-            y_mark = time_data[i + seq_len:i + seq_len + pred_len]  # Time features for decoder
-            # Decoder input: last label_len of x_enc + zeros for pred_len
-            x_dec = np.zeros((seq_len + pred_len, data.shape[1]))
-            x_dec[:seq_len] = x  # Copy last seq_len timesteps
-            xs.append(x)
-            ys.append(y)
-            x_marks.append(x_mark)
-            y_marks.append(y_mark)
-            x_decs.append(x_dec)
-        X = torch.tensor(xs, dtype=torch.float32)
-        y = torch.tensor(ys, dtype=torch.float32)
-        x_mark = torch.tensor(x_marks, dtype=torch.float32)
-        y_mark = torch.tensor(y_marks, dtype=torch.float32)
-        x_dec = torch.tensor(x_decs, dtype=torch.float32)
+        # Pre-allocate arrays for efficiency
+        n = len(data) - seq_len - pred_len
+        X = np.zeros((n, seq_len, data.shape[1]))
+        y = np.zeros((n, pred_len, data.shape[1]))
+        x_mark = np.zeros((n, seq_len, time_data.shape[1]))
+        y_mark = np.zeros((n, seq_len + pred_len, time_data.shape[1]))
+        x_dec = np.zeros((n, seq_len + pred_len, data.shape[1]))
+
+        # Fill arrays with progress bar
+        for i in tqdm(range(n), desc="Generating sequences", leave=True):
+            X[i] = data[i:i + seq_len]
+            y[i] = data[i + seq_len:i + seq_len + pred_len]
+            x_mark[i] = time_data[i:i + seq_len]
+            y_mark[i] = time_data[i:i + seq_len + pred_len]
+            x_dec[i, :seq_len] = X[i]  # Copy encoder input to decoder
+
+        # Convert to tensors
+        print("Converting data to tensors...")
+        X = torch.tensor(X, dtype=torch.float32)
+        y = torch.tensor(y, dtype=torch.float32)
+        x_mark = torch.tensor(x_mark, dtype=torch.float32)
+        y_mark = torch.tensor(y_mark, dtype=torch.float32)
+        x_dec = torch.tensor(x_dec, dtype=torch.float32)
         return X, y, x_mark, y_mark, x_dec
+    except FileNotFoundError:
+        print(f"Error: Data file not found at {root_path}{data_path}")
+        raise
+    except pd.errors.ParserError:
+        print(f"Error: Unable to parse CSV file at {root_path}{data_path}")
+        raise
     except Exception as e:
-        print(f"Error loading data: {e}")
+        print(f"Unexpected error loading data: {e}")
         raise

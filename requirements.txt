@@ -4,3 +4,4 @@ numpy
 wandb
 scikit-learn
 pyyaml
+tqdm

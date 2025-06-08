@@ -3,3 +3,4 @@
 
 # File types to ignore
 *.ipynb
+__pycache__
