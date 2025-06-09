@@ -20,3 +20,7 @@ parameters:
   alpha:
     min: 0.3
     max: 0.7
+
+
+# Limit the number of sweep runs
+count: 25

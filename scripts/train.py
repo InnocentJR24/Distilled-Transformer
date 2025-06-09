@@ -1,5 +1,9 @@
 import os
 import sys
+# Add project root to sys.path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(project_root)
+
 import yaml
 import torch
 import wandb
@@ -10,10 +14,12 @@ import random
 import numpy as np
 
 # Set seeds for reproducibility
-torch.manual_seed(42)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(42)
+else:
+    torch.manual_seed(42)
 np.random.seed(42)
 random.seed(42)
-# Enable CUDNN benchmark for better performance, remove deterministic for speed
 torch.backends.cudnn.benchmark = True
 
 def load_config(config_path):
@@ -39,10 +45,6 @@ def load_config(config_path):
         raise
 
 if __name__ == "__main__":
-    # # Add project root to sys.path
-    # project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    # sys.path.append(project_root)
-    
     # Load base configuration
     base_config = load_config("config/config.yaml")
     

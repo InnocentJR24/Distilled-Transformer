@@ -20,10 +20,18 @@ def warmup_model(model, data_loader, device, iterations=3):
         for i in tqdm(range(iterations), desc="Warming up model", leave=False):
             for batch in data_loader:
                 xb, _, x_mark, y_mark, x_dec = batch
-                inputs = [t.to(device) for t in (xb, x_mark, x_dec, y_mark) if t is not None]
-                _ = model(*inputs[:model.__call__.__code__.co_argcount - 1])
+                if isinstance(model, Informer):
+                    inputs = {
+                        'x_enc': xb.to(device),
+                        'x_mark_enc': x_mark.to(device),
+                        'x_dec': x_dec.to(device),
+                        'x_mark_dec': y_mark.to(device)
+                    }
+                    _ = model(**inputs)
+                else:  # Assume LSTMModel or similar single-input model
+                    _ = model(xb.to(device))
                 break  # One batch per iteration is sufficient
-
+            
 def load_informer_model(checkpoints, args, device):
     """Load the pre-trained Informer model.
     Reason: Loads teacher model to provide soft targets for distillation, evaluated as baseline.
@@ -69,8 +77,9 @@ def evaluate_informer_baseline(model, test_loader, device):
     warmup_model(model, test_loader, device)
     test_size = len(test_loader.dataset)
     batch_size = test_loader.batch_size
-    feature_dim = model.c_out
-    pred_len = model.out_len
+    # Get feature_dim from the projection layer's output size
+    feature_dim = model.projection.out_features
+    pred_len = model.pred_len
     preds = torch.zeros(test_size, pred_len, feature_dim)
     truths = torch.zeros(test_size, pred_len, feature_dim)
     start = time.time()

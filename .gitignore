@@ -3,4 +3,8 @@
 
 # File types to ignore
 *.ipynb
-__pycache__
+*.pt
+
+# Folder to ignore
+wandb/
+__pycache__/
