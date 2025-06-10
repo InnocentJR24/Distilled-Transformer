@@ -2,7 +2,6 @@
 .venv/
 
 # File types to ignore
-*.ipynb
 *.pt
 
 # Folder to ignore
