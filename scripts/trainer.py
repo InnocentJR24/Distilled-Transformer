@@ -120,9 +120,9 @@ def train(sweep_config, args, device):
     test_loader = DataLoader(TensorDataset(test_X, test_y, test_x_mark, test_y_mark, test_x_dec), 
                              batch_size=sweep_config.batch_size)
 
-    # Evaluate Informer baseline
-    informer_mse, informer_inf_time = evaluate_informer_baseline(informer_model, test_loader, device)
-    wandb.log({"informer_mse": informer_mse, "informer_inference_time": informer_inf_time})
+    # # Evaluate Informer baseline
+    # informer_mse, informer_inf_time = evaluate_informer_baseline(informer_model, test_loader, device)
+    # wandb.log({"informer_mse": informer_mse, "informer_inference_time": informer_inf_time})
 
     # Initialize student model
     model = LSTMModel(args.enc_in, sweep_config.hidden_size, sweep_config.num_layers, args.c_out, args.pred_len, sweep_config.dropout_rate).to(device)
