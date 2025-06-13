@@ -124,8 +124,6 @@ def train(sweep_config, args, device):
     informer_mse, informer_inf_time = evaluate_informer_baseline(informer_model, test_loader, device)
     wandb.log({"informer_mse": informer_mse, "informer_inference_time": informer_inf_time})
 
-    exit()
-
     # Initialize student model
     model = LSTMModel(args.enc_in, sweep_config.hidden_size, sweep_config.num_layers, args.c_out, args.pred_len, sweep_config.dropout_rate).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=sweep_config.lr)
