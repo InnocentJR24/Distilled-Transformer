@@ -11,7 +11,7 @@ import os
 from utils.data import load_data
 from utils.tools import dotdict
 
-def warmup_model(model, data_loader, device, iterations=10):
+def warmup_model(model, data_loader, device, iterations=3):
     """Warm up model for stable inference timing.
     Reason: Stabilizes GPU performance before evaluation, avoids cold start bias.
     """
