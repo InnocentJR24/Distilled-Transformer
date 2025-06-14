@@ -5,3 +5,4 @@ wandb
 scikit-learn
 pyyaml
 tqdm
+matplotlib
