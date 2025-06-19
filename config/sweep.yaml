@@ -14,9 +14,9 @@ parameters:
     values: [0.1, 0.2, 0.3]
   lr:
     min: 0.0001
-    max: 0.005
+    max: 0.01
   epochs:
-    values: [10, 15, 20]
+    values: [30, 45, 60]
   alpha:
     min: 0.3
     max: 0.7
