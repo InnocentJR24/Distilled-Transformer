@@ -1,71 +1,94 @@
-# LSTM Model Improvements and Results Visualization
+# Distilling Informer Transformers into LSTMs for Efficient Time-Series Forecasting
 
-This repository contains enhancements to an LSTM model, focusing on improving its performance and results visualization. It includes a pre-trained Informer model for knowledge distillation and supports training, evaluation, and logging with Weights & Biases (W&B).
+This repository contains the implementation of a **Knowledge Distillation (KD) framework** that compresses a state-of-the-art **Informer Transformer** into a lightweight **LSTM** student. By transferring "dark knowledge" from the teacher's soft targets, the distilled LSTM achieves Transformer-level accuracy with up to **72x faster inference**.
 
-## Overview
+## Key Achievements & Contributions
 
-- **Improvements**: The LSTM model has been refined with better configuration, data handling, and training scripts. An Informer model serves as a teacher for distillation.
-- **Visualization**: Results are logged and visualized using W&B.
-- **Structure**: The project is organized into directories for configuration, data, models, scripts, and utilities.
+* **Massive Efficiency Gains**: Achieved a **72x speedup** for long-horizon forecasting (reducing latency from 81ms to 1.1ms) and a **22x speedup** for short-horizon tasks.
+* **Accuracy Parity & Improvement**: Demonstrated that the distilled LSTM student not only matches but often **outperforms** the Informer teacher (e.g., reducing Test MSE from 1.096 to **0.894**).
+* **Automated MLOps Pipeline**: Integrated **Weights & Biases (W&B)** to perform 100+ hyperparameter sweeps, identifying the **Pareto-optimal** configurations for deployment on resource-constrained devices.
+* **Robust Statistical Analysis**: Conducted a dual-metric importance analysis (Pearson Correlation & Random Forest) to evaluate the non-linear interactions between distillation weights and model performance.
+* **High-Performance Computing**: Optimized and benchmarked the framework on the **DAS-5 Supercomputer cluster** using NVIDIA RTX 2080 Ti GPUs.
+
+
+## Methodology
+
+### Knowledge Distillation Framework
+
+The student model is trained on a composite loss function that balances ground-truth fidelity with the mimicry of the teacher's inductive biases:
+
+Where:
+
+*  is the Mean Squared Error against the ground truth labels.
+*  is the distillation loss against the Informer's soft predictions.
+*  is the tunable weight (0.3 to 0.7) that regulates the distillation balance.
+
+### Architectures
+
+* **Teacher**: Informer Transformer with ProbSparse self-attention and a generative decoder.
+* **Student**: Multi-layer stacked LSTM (optimized down to ~19k parameters).
+
+
+## Performance Comparison (ETTh1 Dataset)
+
+| Model | Horizon | Test MSE | Inference Time (s) | Speedup |
+| --- | --- | --- | --- | --- |
+| **Informer (Teacher)** | Long | 1.096 | 0.0813 | Baseline |
+| **Distilled LSTM** | Long | **0.894** | **0.0011** | **72x** |
+| **Informer (Teacher)** | Short | 0.5485 | 0.0136 | Baseline |
+| **Distilled LSTM** | Short | **0.5094** | **0.0006** | **22x** |
+
 
 ## Repository Structure
 
-- `config/`: Configuration files for model and training settings.
-- `data/`: Datasets and related files.
-- `informer_checkpoints/`: Pre-trained Informer model checkpoints.
-- `models/`: Model definitions (e.g., LSTMModel, Informer).
-- `scripts/`: Training and evaluation scripts (e.g., `train.py`, `trainer.py`).
-- `utils/`: Utility functions for data loading and tools.
-- `.gitignore`: Git ignore file.
-- `README.md`: Project documentation.
-- `requirements.txt`: Python dependencies.
-- `results.ipynb`: Notebook for result analysis.
-- `requirements.txt`: Project dependencies.
+```text
+├── config/                # YAML files for model, W&B sweeps, and training
+├── data/                  # ETTh1 dataset and preprocessing scripts
+├── informer_checkpoints/  # Pre-trained weights for the Informer teacher
+├── models/                # PyTorch definitions for LSTM and Informer
+├── scripts/               
+│   ├── train.py           # Main entry point for training/distillation
+│   └── trainer.py         # Encapsulated logic for the distillation loop
+├── utils/                 # Data loaders, scalers, and timing utilities
+└── results.ipynb          # Notebook for post-hoc analysis and Pareto plotting
 
-## Setup
+```
 
-1. **Clone the Repository**:
-   ```bash
-   git clone <repository-url>
-   cd <repository-directory>
-   ```
-
-2. **Install Dependencies**:
-   Install the required Python packages listed in `requirements.txt`:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Set Up Weights & Biases**:
-   - Install W&B: `pip install wandb`
-   - Log in to W&B: `wandb login`
-   - Configure your W&B project in `config/config.yaml` under the `wandb` section.
-
-4. **Prepare Data**:
-   - Place your dataset in the `data/` directory or update `args.root_path` and `args.data_path` in `config/config.yaml` to point to your data source.
 
 ## Usage
 
-1. **Configure the Model**:
-   - Edit `config/config.yaml` to adjust model parameters, training settings, and paths.
+### 1. Installation
 
-2. **Run Training**:
-   Execute the training script:
-   ```bash
-   python scripts/train.py
-   ```
-   - This will initialize W&B, load the configuration, and start the training process with optional sweep configurations.
+```bash
+git clone <repository-url>
+pip install -r requirements.txt
 
-3. **Evaluate Results**:
-   - Check the W&B dashboard for logged metrics (e.g., MSE, inference time, number of parameters).
-   - Explore `results.ipynb` for visualizations and further analysis.
+```
+
+### 2. Set Up W&B
+
+```bash
+wandb login
+# Update project name in config/config.yaml
+
+```
+
+### 3. Run Distillation
+
+To train the student model using the pre-trained Informer:
+
+```bash
+python scripts/train.py --config config/config.yaml
+
+```
+
+
+## Acknowledgments
+
+* **Advisor**: Peter Bloem (Vrije Universiteit Amsterdam).
+* **Infrastructure**: DAS-5 Supercomputer Cluster.
+* **References**: Based on the seminal work by Hinton et al. (2015) and Zhou et al. (2021).
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Knowledge distillation methodology based on Hinton et al. (2015)
-- Informer architecture from Zhou et al. (2021)
-- Experiment tracking powered by [Weights & Biases](https://wandb.ai)
